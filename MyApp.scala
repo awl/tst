@@ -29,41 +29,43 @@ object MyApp extends App {
         case h :: t =>
           val available = allPromotions.filter(p => !(h.code +: h.notCombinableWith).contains(p.code))
           val currentCombos = buildMap(h, available.size, available, map)
-          combinablePromotions(promotions.tail, map ++ currentCombos)
+          combinablePromotions(t, map ++ currentCombos)
       }
     }
 
     @tailrec
-    def buildMap(currentProm: Promotion, index: Int, available: Seq[Promotion], map: Map[Seq[String], String]): Map[Seq[String], String] = {
+    def buildMap(current: Promotion, index: Int, available: Seq[Promotion], map: Map[Seq[String], String]): Map[Seq[String], String] = {
       index match {
         case 0 => map
         case i => {
-          val combo = getCombo(currentProm, available, currentProm.notCombinableWith)
-          buildMap(currentProm, i-1, available.tail :+ available.head, map ++ Map(combo.sorted -> currentProm.code))
+          val combo = getCombo(current, available, current.notCombinableWith)
+          buildMap(current, i-1, available.tail :+ available.head, map ++ Map(combo.sorted -> current.code))
         }
       }
     }
 
     @tailrec
-    def getCombo(current: Promotion, available: Seq[Promotion], blacklist: Seq[String], combination: Seq[String] = Seq()): Seq[String] = {
+    def getCombo(current: Promotion, available: Seq[Promotion], blacklist: Seq[String], combination: Seq[String] = Seq.empty): Seq[String] = {
       available match {
         case Nil => current.code +: combination
-        case _ if blacklist.contains(available.head.code) => getCombo(current, available.tail, blacklist, combination)
-        case _ => getCombo(current, available.tail, blacklist ++ available.head.notCombinableWith, combination :+ available.head.code)
+        case h :: t if blacklist.contains(h.code) => getCombo(current, t, blacklist, combination)
+        case h :: t => getCombo(current, t, blacklist ++ h.notCombinableWith, combination :+ h.code)
       }
     }
 
-    combinablePromotions(allPromotions).keys.map(PromotionCombo.apply).toSeq
+    combinablePromotions(allPromotions).keys.map(PromotionCombo).toSeq
   }
 
   def combinablePromotions(promotionCode: String, allPromotions: Seq[Promotion]): Seq[PromotionCombo] = {
     allCombinablePromotions(allPromotions).filter(_.promotionCodes.contains(promotionCode))
   }
 
-  val rates = Seq(Rate("M1", "Military"),
+  val rates = Seq(
+    Rate("M1", "Military"),
     Rate("M2", "Military"),
     Rate("S1", "Senior"),
-    Rate("S2", "Senior"))
+    Rate("S2", "Senior")
+  )
 
   val prices = Seq(
     CabinPrice("CA", "M1", 200.00),
